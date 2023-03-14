@@ -1,0 +1,521 @@
+---
+title: "Baseball Analytics 1"
+author: "Mendoza College of Business"
+date: "10/20/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Let's first load the packages we will use for this analysis:
+
+```{r}
+library(ggplot2) # Load ggplot2
+library(reshape) # Load tidyverse
+```
+
+# Set Up
+
+For this analysis we will work with statcast data. Statcast is the tracking technology that is used to collect baseball data for the MLB. The data can be downloaded into R using the `baseballr` package. The script used to download and prepare the data for this class is `baseball_data_scrapr.r`.
+
+There are a few pre-processing steps to go through which we can skip for the class and load in the modified data stored as `statcast_2022.rda`. This dataset contains all of the pitches from the 2021 MLB season. 
+
+Let's load it in:
+
+```{r}
+load("2022_stat_cast_data.rda") # Load data
+```
+
+
+Load in all batter data for the Chicago Cubs
+
+
+```{r}
+cubs <- batters[batters$batter_team == "CHC", ]
+```
+
+Series I have chosen is a series from July 12-13, 2022 against the Baltimore Orioles
+
+July 12,
+
+Winning pitcher was Lyles, C. Perez with a hold, and Jorge Lopez with the save
+
+July 13, 
+
+
+
+
+```{r}
+
+table(cubs$type)
+
+single <- cubs[cubs$events == "single",]
+double <- cubs[cubs$events == "double",]
+triple <- cubs[cubs$events == "triple",]
+HR <- cubs[cubs$events == "home_run",]
+
+singleL <- single[single$p_throws == "L",]
+SingleR <- single[single$p_throws == "R",]
+doubleL <- double[double$p_throws == "L",]
+doubleR <- double[double$p_throws == "R",]
+tripleL <- triple[triple$p_throws == "L",]
+tripleR <- triple[triple$p_throws == "R",]
+HRL <- HR[HR$p_throws == "L",]
+HRR <- HR[HR$p_throws == "R",]
+
+HitR <- 13 + 400 + 66 + 118
+HitL <- 7 + 132 + 31 + 49
+
+
+```
+
+
+Looking at the spread of hits it seems that they hit much better off Right handed pitchers, but that could be attributed to the fact they face a lot more Right handed pitchers, let's look.
+
+
+```{r}
+pitchL <- cubs[cubs$p_throws == "L",]
+pitchR <- cubs[cubs$p_throws == "R",]
+
+teamavgL <- .219
+teamavgR <- .231
+```
+
+I was correct, the cubs face a lot more right handed pitches than they do left handed pitches. My next step is I want to convert these to expected bases per pitch for both left and right handers. 
+
+
+```{r}
+leftxbp <- (nrow(singleL)/nrow(pitchL)) + ((nrow(doubleL)/nrow(pitchL) ) * 2) + ((nrow(tripleL)/nrow(pitchL) ) * 3) + ((nrow(HRL)/nrow(pitchL) ) * 4)
+
+
+rightxbp <- (nrow(SingleR)/nrow(pitchR)) + ((nrow(doubleR)/nrow(pitchR) ) * 2) + ((nrow(tripleR)/nrow(pitchR) ) * 3) + ((nrow(HRR)/nrow(pitchR) ) * 4)
+
+
+leftxbp
+rightxbp
+```
+
+After running this we see that in fact the cubs are expected to get more bases against left handed pitchers compared to right handed, this could be a contributing factor in why they see more right handed pitchers. Next I want to focus on the type of pitches the players hit the best
+
+
+```{r}
+
+library(stringr)
+
+hit <- cubs[cubs$events == "single" | cubs$events == "double" | cubs$events == "triple" | cubs$events == "home_run", ]
+
+```
+
+
+
+Time to focus on the pitchers from the selected games
+
+July 12 
+Winning pitcher was Lyles, C. Perez with a hold, and Jorge Lopez with the save
+
+
+```{r}
+Lyles <- pitchers[pitchers$player_name == "Lyles, Jordan",]
+XBaLyles <- (teamavgR+.279)/2
+
+Perez <- pitchers[pitchers$pitcher == 672335,]
+Lopez <- pitchers[pitchers$pitcher == 605347,]
+
+hitLyles <- Lyles[Lyles$events == "single" | Lyles$events == "double" | Lyles$events == "triple" | Lyles$events == "home_run",]
+
+hitPerez <- Perez[Perez$events == "single" | Perez$events == "double" | Perez$events == "triple" | Perez$events == "home_run",]
+
+hitLopez <- Lopez[Lopez$events == "single" | Lopez$events == "double" | Lopez$events == "triple" | Lopez$events == "home_run",]
+
+```
+
+July 13
+
+Watkins, Tate, C. Perez, Krehbiel, Baker
+
+```{r}
+Watkins <- pitchers[pitchers$player_name == "Watkins, Spenser",]
+Tate <- pitchers[pitchers$player_name == "Tate, Dillon",]
+Krehbiel <- pitchers[pitchers$player_name == "Krehbiel, Joey",]
+Baker <- pitchers[pitchers$player_name == "Baker, Bryan",]
+
+
+hitWatkins <- Watkins[Watkins$events == "single" | Watkins$events == "double" | Watkins$events == "triple" | Watkins$events == "home_run",]
+
+hitTate <- Tate[Tate$events == "single" | Tate$events == "double" | Tate$events == "triple" | Tate$events == "home_run",]
+
+hitKrehbiel <- Krehbiel[Krehbiel$events == "single" | Krehbiel$events == "double" | Krehbiel$events == "triple" | Krehbiel$events == "home_run",]
+
+hitBaker <- Baker[Baker$events == "single" | Baker$events == "double" | Baker$events == "triple" | Baker$events == "home_run",]
+```
+
+
+Now I want to do something similar for pitchers as I did batters, I want to see the expected hits per pitch
+
+
+```{r}
+Lylesxbp <- (nrow(hitLyles)/nrow(Lyles))
+Perezxbp <- (nrow(hitPerez)/nrow(Perez))
+Lopezxbp <- (nrow(hitLopez)/nrow(Lopez))
+Watkinsxbp <- (nrow(hitWatkins)/nrow(Watkins))
+Tatexbp <- (nrow(hitTate)/nrow(Tate))
+Krehbielxbp <- (nrow(hitKrehbiel)/nrow(Krehbiel))
+Bakerxbp <- (nrow(hitBaker)/nrow(Baker))
+
+```
+
+From looking at this Lopez has the lowest expected hits per pitch, this is expected as he is a closing pitcher.
+
+Calculating the orioles batting averages vs right handed pitchers along with other hitting stats
+
+```{r}
+H <- 92 + 105 +98+119+84+74+72+65+79+27+16+22+9+5+21+0+4+0+2+3+20+16+1+2+0
+
+PA <- 417+413+389+426+300+286+342+235+346+93+106+89+29+27+80+6+41+1+10+21+93+92+27+16+3
+
+OBa <- H/PA
+
+XBaSampson <- (.253+OBa)/2
+XBaEffross <- (.220+OBa)/2
+XBaGivens <- (.216+OBa)/2
+XBaSwarmer <- (.250+OBa)/2
+
+orioles <- batters[batters$batter_team == "BAL", ]
+
+singleO <- orioles[orioles$events == "single",]
+doubleO <- orioles[orioles$events == "double",]
+tripleO <- orioles[orioles$events == "triple",]
+HRO <- orioles[orioles$events == "home_run",]
+
+singleLO <- singleO[singleO$p_throws == "L",]
+SingleRO <- singleO[singleO$p_throws == "R",]
+doubleLO <- doubleO[doubleO$p_throws == "L",]
+doubleRO <- doubleO[doubleO$p_throws == "R",]
+tripleLO <- tripleO[tripleO$p_throws == "L",]
+tripleRO <- tripleO[tripleO$p_throws == "R",]
+HRLO <- HRO[HRO$p_throws == "L",]
+HRRO <- HRO[HRO$p_throws == "R",]
+
+Hit0 <- 8 +313+130+70
+
+
+
+```
+
+Cubs vs left handers because Cionel Perez is a lefty, then followed by Jorge Lopez
+
+
+```{r}
+HLC <- 31+23+20+28+14+19+16+39+37+10+16+1+6+1+5+20+3+4+3+2+1+7
+PALC <- 124+105+83+104+71+100+76+128+126+32+73+8+33+5+24+27+23+78+14+19+6+29+20+35
+
+CLBa <- HLC/PALC
+
+xBaPerez <- (.220+CLBa)/2
+
+
+XBaLopez <- (teamavgR+.174)/2
+
+
+
+
+```
+
+
+I am going to try and start a Monte Carlo simulation here, not about to be very easy.
+
+
+
+```{r}
+set.seed(09161999)
+
+finalC <- rep(NA, 5000)
+finalO <- rep(NA, 5000)
+
+scores.df <- data.frame(finalC, finalO)
+
+for (i in 1:nrow(scores.df)){
+
+inningC <- 1
+runsC <-  0
+outsC <- 0
+runnersC <- 0
+
+while (inningC < 10){
+  #Rbinom to simulate whether there was a hit or not
+  hitC <- runif(1,0,1)
+  #Check if it was a hit or an out, if a hit we add one base runner
+  runnersC <- case_when(
+    hitC < .171 ~ runnersC + 1,
+    hitC < .221 ~ runnersC + 2,
+    hitC < .227 ~ runnersC + 3,
+    hitC < .256 ~ runnersC + 4,
+    TRUE ~ 0)
+  if (hitC >= round(XBaLyles,3)) {
+    outsC <- outsC + 1
+  }
+  #This IF is supposed to add a run if runners get to 4, and returns runners to 3. While adding a run signifying a runner scored
+  
+  if (runnersC >= 4){
+    runsC = runsC + 1
+    runnersC <-  runnersC - 4
+  }# This IF checks if there are 3 outs, if there is it resets outs and runners, while changing the inning as well
+  if (outsC == 3){
+    inningC = inningC + 1
+    outsC <- 0
+    runnersC <- 0
+  }
+  if (inningC == 7 | inningC == 8){
+    hitC <- runif(1,0,1)
+  #Check if it was a hit or an out, if a hit we add one base runner
+  runnersC <- case_when(
+    hitC < .135 ~ runnersC + 1,
+    hitC < .185 ~ runnersC + 2,
+    hitC < .192 ~ runnersC + 3,
+    hitC < .224 ~ runnersC + 4,
+    TRUE ~ 0)
+  if (hitC >= round(xBaPerez,3)) {
+    outsC <- outsC + 1
+  }
+  if (runnersC >= 4){
+    runsC = runsC + 1
+    runnersC <-  runnersC - 4
+    
+  }# This IF checks if there are 3 outs, if there is it resets outs and runners, while changing the inning as well
+  if (outsC == 3){
+    inningC = inningC + 1
+    outsC <- 0
+    runnersC <- 0
+  }
+  
+  }
+  if(inningC == 9){
+    hitC <- runif(1,0,1)
+  #Check if it was a hit or an out, if a hit we add one base runner
+  runnersC <- case_when(
+    hitC < .136 ~ runnersC + 1,
+    hitC < .176 ~ runnersC + 2,
+    hitC < .180 ~ runnersC + 3,
+    hitC < .203 ~ runnersC + 4,
+    TRUE ~ 0)
+    if (hitC >= round(XBaLopez,3)) {
+    outsC <- outsC + 1
+    }
+  if (runnersC >= 4){
+    runsC = runsC + 1
+    runnersC <-  runnersC - 4
+    
+  }# This IF checks if there are 3 outs, if there is it resets outs and runners, while changing the inning as well
+  if (outsC == 3){
+    inningC = inningC + 1
+    outsC <- 0
+    runnersC <- 0
+  }
+    
+  }
+
+  
+}
+
+inningO <- 1
+runsO <-  0
+outsO <- 0
+runnersO <- 0
+
+while (inningO < 10){
+  #Rbinom to simulate whether there was a hit or not
+  hitO <- runif(1,0,1)
+  #Check if it was a hit or an out, if a hit we add one base runner
+  runnersO <- case_when(
+    hitO < .148 ~ runnersO + 1,
+    hitO < .210 ~ runnersO + 2,
+    hitO < .214 ~ runnersO + 3,
+    hitO < .248 ~ runnersO + 4,
+    TRUE ~ 0)
+  if (hitO >= round(XBaSampson,3) ) {
+    outsO <- outsO + 1
+  }
+  #This IF is supposed to add a run if runners get to 4, and returns runners to 3. While adding a run signifying a runner scored
+  
+  if (runnersO >= 4){
+    runsO = runsO + 1
+    runnersO <-  runnersO - 4
+  }# This IF checks if there are 3 outs, if there is it resets outs and runners, while changing the inning as well
+  if (outsO == 3){
+    inningO = inningO + 1
+    outsO <- 0
+    runnersO <- 0
+  }
+  if(inningO == 7){
+    hitO <- runif(1,0,1)
+  #Check if it was a hit or an out, if a hit we add one base runner
+  runnersO <- case_when(
+    hitO < .138 ~ runnersO + 1,
+    hitO < .195 ~ runnersO + 2,
+    hitO < .199 ~ runnersO + 3,
+    hitO < .231 ~ runnersO + 4,
+    TRUE ~ 0)
+  if (hitO >= round(XBaEffross,3) ) {
+    outsO <- outsO + 1
+  }
+  #This IF is supposed to add a run if runners get to 4, and returns runners to 3. While adding a run signifying a runner scored
+  if (runnersO >= 4){
+    runsO = runsO + 1
+    runnersO <-  runnersO - 4
+  }# This IF checks if there are 3 outs, if there is it resets outs and runners, while changing the inning as well
+  if (outsO == 3){
+    inningO = inningO + 1
+    outsO <- 0
+    runnersO <- 0
+  }
+    
+    
+  }
+  if(inningO == 8){
+    hitO <- runif(1,0,1)
+  #Check if it was a hit or an out, if a hit we add one base runner
+  runnersO <- case_when(
+    hitO < .137 ~ runnersO + 1,
+    hitO < .194 ~ runnersO + 2,
+    hitO < .198 ~ runnersO + 3,
+    hitO < .229 ~ runnersO + 4,
+    TRUE ~ 0)
+  if (hitO >= round(XBaGivens, 3) ) {
+    outsO <- outsO + 1
+  }
+  #This IF is supposed to add a run if runners get to 4, and returns runners to 3. While adding a run signifying a runner scored
+  if (runnersO >= 4){
+    runsO = runsO + 1
+    runnersO <-  runnersO - 4
+  }# This IF checks if there are 3 outs, if there is it resets outs and runners, while changing the inning as well
+  if (outsO == 3){
+    inningO = inningO + 1
+    outsO <- 0
+    runnersO <- 0
+  }
+  }
+  if (inningO == 9){
+    hitO <- runif(1,0,1)
+  #Check if it was a hit or an out, if a hit we add one base runner
+  runnersO <- case_when(
+    hitO < .147 ~ runnersO + 1,
+    hitO < .208 ~ runnersO + 2,
+    hitO < .212 ~ runnersO + 3,
+    hitO < .246 ~ runnersO + 4,
+    TRUE ~ 0)
+  if (hitO >= round(XBaSwarmer, 3) ) {
+    outsO <- outsO + 1
+  }
+  #This IF is supposed to add a run if runners get to 4, and returns runners to 3. While adding a run signifying a runner scored
+  if (runnersO >= 4){
+    runsO = runsO + 1
+    runnersO <-  runnersO - 4
+  }# This IF checks if there are 3 outs, if there is it resets outs and runners, while changing the inning as well
+  if (outsO == 3){
+    inningO = inningO + 1
+    outsO <- 0
+    runnersO <- 0
+  }
+    
+  }
+
+  
+}
+while(runsC == runsO){
+    hitC <- runif(1,0,1)
+    #Check if it was a hit or an out, if a hit we add one base runner
+    runnersC <- case_when(
+      hitC < .171 ~ runnersC + 1,
+      hitC < .221 ~ runnersC + 2,
+      hitC < .227 ~ runnersC + 3,
+      hitC < .256 ~ runnersC + 4,
+      TRUE ~ 0)
+    if (hitC >= round(XBaLyles,3)) {
+      outsC <- outsC + 1
+    }
+    #This IF is supposed to add a run if runners get to 4, and returns runners to 3. While adding a run signifying a   runner scored
+  
+    if (runnersC >= 4){
+      runsC = runsC + 1
+      runnersC <-  runnersC - 4
+    }# This IF checks if there are 3 outs, if there is it resets outs and runners, while changing the inning as well
+    if (outsC == 3){
+      inningC = inningC + 1
+      outsC <- 0
+      runnersC <- 0
+    }
+      hitO <- runif(1,0,1)
+    #Check if it was a hit or an out, if a hit we add one base runner
+    runnersO <- case_when(
+      hitO < .148 ~ runnersO + 1,
+      hitO < .210 ~ runnersO + 2,
+      hitO < .214 ~ runnersO + 3,
+      hitO < .248 ~ runnersO + 4,
+      TRUE ~ 0)
+    if (hitO >= round(XBaSampson,3) ) {
+      outsO <- outsO + 1
+    }
+    #This IF is supposed to add a run if runners get to 4, and returns runners to 3. While adding a run signifying a   runner scored
+  
+    if (runnersO >= 4){
+      runsO = runsO + 1
+      runnersO <-  runnersO - 4
+    }# This IF checks if there are 3 outs, if there is it resets outs and runners, while changing the inning as well
+    if (outsO == 3){
+      inningO = inningO + 1
+      outsO <- 0
+      runnersO <- 0
+    }}
+
+finalC[i] <- runsC
+finalO[i] <- runsO
+
+
+}
+
+
+scores.df$finalC <- finalC
+scores.df$finalO <- finalO
+
+scores.df$CubsWin <- ifelse(finalC > finalO, 1, 0)
+scores.df$OriolesWin <- ifelse(finalO > finalC, 1, 0)
+
+tableC <- table(scores.df$CubsWin)
+tableO <- table(scores.df$OriolesWin)
+
+print(paste0("Predicted Cubs Wins: ", tableC[2], ", predicted Cubs loses: ", tableC[1]))
+print(paste0("Predicted Orioles Wins: ", tableO[2], ", predicted Orioles loses: ", tableO[1]))
+```
+
+Histograms of Team scores
+
+```{r}
+hist(scores.df$finalC, main = "Histogram of Cubs Final Scores", xlab = "Final Scores")
+hist(scores.df$finalO, main = "Histogram of Orioles Final Scores", xlab = "Final Scores")
+
+
+mean(finalC)
+mean(finalO)
+
+trying <- scores.df[scores.df$finalC == 2 & scores.df$finalO == 4, ]
+
+
+```
+
+
+```{r}
+
+boxplot(scores.df$finalC, xlab = "Cubs", ylab = "Runs Scored")
+boxplot(scores.df$finalO, xlab = "Orioles", ylab = "Runs scored")
+
+
+```
+
+
+
+
+
+
+
